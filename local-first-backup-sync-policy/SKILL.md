@@ -42,9 +42,9 @@ git diff -- .eikona .auctra .scaena .pinax .gitpulse
 4. Prefer CLI-authored backup commands where they exist. For Eikona:
 
 ```bash
-eikona storage backend set s3 --bucket eikona-assets --prefix eikona-sync/ --region us-east-1 --profile work --json
-eikona storage push --backend s3 --yes --json
-eikona storage restore --backend s3 --revision <revision> --to temp/storage-restore --json
+eikona storage backend set s3 --bucket eikona-assets --prefix eikona-sync/ --region us-east-1 --profile work --agent
+eikona storage push --backend s3 --yes --agent
+eikona storage restore --backend s3 --revision <revision> --to temp/storage-restore --agent
 ```
 
 5. For generic non-Pinax repository mirrors, use rclone with explicit excludes:
