@@ -1,45 +1,80 @@
 ---
 name: yeisme-skill-routing-governance
-description: Use when selecting, adding, removing, discovering, reviewing, or routing skills for the Yeisme root repository or a subproject, especially when changing .skills/profiles, syncing .agents/.claude runtimes, replacing skillctl commands, or deciding whether a skill should be active or loaded on demand.
+description: Use when selecting, combining, adding, removing, discovering, reviewing, or routing complex skills for a Yeisme or external project, especially when managing project profiles, syncing .agents/.claude runtimes, deciding active versus on-demand status, or guiding an agent to use the smallest compatible workflow and domain constraints.
 ---
 
 # Yeisme Skill Routing Governance
 
-Keep semantic routing in the agent and deterministic state changes in repository scripts.
+Keep semantic routing in the agent and deterministic state changes in the portable Skill manager.
 
 ## Boundaries
 
-- Treat `.skills/yeisme/` as the project-owned source and `.skills/imported/` as the reviewed third-party source.
-- Treat `.skills/profiles/root.txt` and `.skills/profiles/targets/<owner>.txt` as the only active-skill declarations.
+- In the Yeisme monorepo, treat `.skills/yeisme/` as the project-owned source and `.skills/imported/` as the reviewed third-party source.
+- In an external project, use the public `yeisme-agent-my-skills` checkout as source and let the manager write the server-local binding to `.skills/source.local`.
+- Treat `.skills/profiles/root.txt` as the portable external-project declaration. Yeisme monorepo subprojects continue to use `.skills/profiles/targets/<owner>.txt` through the host adapter.
 - Treat `.agents/skills/` and `.claude/skills/` as generated runtime copies. Never edit them as source.
 - Do not recreate marketplace, route scoring, sets, telemetry, MCP, HTTP, or background services.
 - Do not encode natural-language task understanding in shell. The agent reads descriptions and chooses.
+- Do not install, activate, or promote every search match. Discovery is evidence, not approval.
 
 ## Routing Workflow
 
 1. Read the nearest `AGENTS.md` and identify the code or document owner.
-2. Prefer a named or clearly triggered active skill.
-3. If no active skill fits, search the source layer:
+2. Classify the requested work as a primary workflow, a domain constraint, an independent audit, or ordinary work that needs no extra Skill.
+3. Prefer a named or clearly triggered active skill.
+4. If no active skill fits, search the source layer:
 
 ```bash
 scripts/skills.sh search "<task terms>"
 scripts/skills.sh resolve <skill-name>
 ```
 
-4. Read only the matching `SKILL.md`. Do not bulk-load source skills.
-5. Use the smallest compatible combination: one primary workflow, at most one compatible domain constraint, and independent audit skills on separate read-only review work.
-6. Keep a skill on demand unless it is useful at session start or repeatedly required by that owner.
-7. If promotion or demotion is justified, update the profile through the script, then sync and validate.
+5. Read every plausible candidate's complete `SKILL.md`, but do not load unrelated references or bulk-load the source inventory.
+6. Select the smallest compatible combination: one primary workflow, at most one compatible domain constraint, and independent audit skills on separate read-only review work.
+7. Reject combinations that assign two owners to the same state, attach two primary workflows, mix implementation and independent audit in one role, or let a domain Skill choose models, permissions, agents, or side effects.
+8. Keep a Skill on demand unless it is required at session start, protects a high-frequency owner invariant, or repeated discovery misses justify promotion.
+9. If promotion or demotion is justified, preview the profile change, apply it through the manager, then perform the narrowest sync and validation.
+
+Read [references/agent-routing-contract.md](references/agent-routing-contract.md) when three or more candidates match, ownership is ambiguous, or a workflow/domain/audit combination needs compatibility review.
+
+## External Project Bootstrap
+
+From a public source checkout:
+
+```bash
+git clone --recurse-submodules https://github.com/yeisme/yeisme-agent-my-skills.git
+cd yeisme-agent-my-skills
+scripts/skills.sh --project /path/to/project init
+```
+
+`init` creates the portable root profile, records the local source checkout, activates this management Skill, synchronizes both runtime homes, and validates the result. The source binding is local to each server; rerun `configure-source` after moving the checkout:
+
+```bash
+scripts/skills.sh --project /path/to/project configure-source
+```
 
 ## Profile Management
 
+For an external project managed from the public checkout:
+
+```bash
+scripts/skills.sh --project /path/to/project profile show
+scripts/skills.sh --project /path/to/project --dry-run profile add <skill-name>
+scripts/skills.sh --project /path/to/project profile add <skill-name>
+scripts/skills.sh --project /path/to/project profile remove <skill-name>
+scripts/skills.sh --project /path/to/project sync
+scripts/skills.sh --project /path/to/project validate
+```
+
+The following commands are Yeisme monorepo host-adapter examples:
+
 ```bash
 scripts/skills.sh profile show root
-scripts/skills.sh profile show cli/cohors
-scripts/skills.sh profile add cli/cohors <skill-name> --dry-run
-scripts/skills.sh profile add cli/cohors <skill-name>
-scripts/skills.sh profile remove cli/cohors <skill-name> --dry-run
-scripts/skills.sh profile remove cli/cohors <skill-name>
+scripts/skills.sh profile show agent/ordo
+scripts/skills.sh profile add agent/ordo <skill-name> --dry-run
+scripts/skills.sh profile add agent/ordo <skill-name>
+scripts/skills.sh profile remove agent/ordo <skill-name> --dry-run
+scripts/skills.sh profile remove agent/ordo <skill-name>
 scripts/skills.sh profile validate
 ```
 
@@ -65,7 +100,17 @@ source skill and profile, when another writer is active, or when ownership is
 ambiguous. Never resolve a sync conflict by hand-editing `.agents/skills/` or
 `.claude/skills/`; repair the source/profile state, then regenerate.
 
-Use the narrowest supported sync command. Run `sync-root` for root-only source
+For an external project, run `sync` only after route selection and profile edits are stable:
+
+```bash
+scripts/skills.sh --project /path/to/project profile validate
+scripts/skills.sh --project /path/to/project sync
+scripts/skills.sh --project /path/to/project validate
+```
+
+The portable manager preserves runtime directories it did not previously manage. It fails instead of overwriting an unmanaged directory whose name conflicts with a profile Skill.
+
+In the Yeisme monorepo host adapter, use the narrowest supported sync command. Run `sync-root` for root-only source
 or profile changes. Run `sync-target <target>` for one affected subproject.
 Run `sync-subprojects` only when multiple subproject assignments or shared
 source skills genuinely require it.
@@ -94,4 +139,12 @@ Review the Git diff before adding the skill to any profile. Do not write externa
 
 ## Output
 
-Report the selected skill, owner, active/on-demand status, profile changes, validation evidence, and unresolved conflicts.
+Report:
+
+- selected primary workflow and why it owns the task;
+- optional domain constraint and why it is compatible;
+- independent audits, if any;
+- active or on-demand status for every selected Skill;
+- profile changes and the exact sync/validation commands used;
+- rejected candidates and the ownership or compatibility reason;
+- unresolved conflicts, missing source capabilities, and next action.

@@ -117,11 +117,19 @@ scripts/skills.sh list-custom
 
 ## Publishing Notes
 
-For other users, document:
+For external projects, prefer the public aggregate adapter:
 
 ```bash
-git clone <repo-url>
-cd yeisme-agent
+git clone --recurse-submodules https://github.com/yeisme/yeisme-agent-my-skills.git
+cd yeisme-agent-my-skills
+scripts/skills.sh --project /path/to/project init
+```
+
+The portable manager activates `yeisme-skill-routing-governance`, writes the project profile through CLI commands, and synchronizes `.agents` plus `.claude`. Keep semantic Skill selection in the management Skill; do not encode task classification in the publishing script.
+
+The Yeisme monorepo continues to use its host adapter:
+
+```bash
 scripts/skills.sh sync-root
 scripts/skills.sh sync-subprojects
 ```

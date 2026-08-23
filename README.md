@@ -16,9 +16,21 @@
 git clone https://github.com/yeisme/agent-workflow-skills.git
 cd agent-workflow-skills
 python3 scripts/validate_skills.py
+python3 scripts/test_skill_manager.py
 ```
 
 这些 Skills 可以描述宿主 adapter 所需 capability，但不应假设宿主一定存在 `scripts/skills.sh`、固定目录或特定产品。Yeisme 专属命令作为示例与 adapter 说明保留在明确标注的 Skill 中。
+
+`yeisme-skill-routing-governance` 是例外的管理入口：它自身携带可移植确定性引擎 `scripts/skills.sh`，但仍不携带 Skill source。外部项目通过显式 `--source` 或 CLI 生成的 `.skills/source.local` 绑定一个公开 source checkout：
+
+```bash
+yeisme-skill-routing-governance/scripts/skills.sh \
+  --source /path/to/yeisme-agent-my-skills \
+  --project /path/to/project \
+  init
+```
+
+语义选择仍由 Agent 完成；脚本只负责发现、唯一解析、profile 状态和双 runtime 同步。
 
 ## License
 

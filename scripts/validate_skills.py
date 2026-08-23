@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -44,6 +45,22 @@ def main() -> int:
 
     if not skills:
         errors.append("no top-level Skills found")
+
+    manager = ROOT / "yeisme-skill-routing-governance" / "scripts" / "skills.sh"
+    if not manager.is_file():
+        errors.append(f"{manager}: missing portable Skill manager")
+    elif not manager.stat().st_mode & 0o111:
+        errors.append(f"{manager}: portable Skill manager must be executable")
+    else:
+        syntax = subprocess.run(
+            ["bash", "-n", str(manager)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if syntax.returncode != 0:
+            errors.append(f"{manager}: bash syntax failed: {syntax.stderr.strip()}")
+
     if errors:
         print("FAIL: Skills validation failed", file=sys.stderr)
         for error in errors:
