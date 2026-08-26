@@ -54,8 +54,8 @@ Full continuity rules are in `docs/workflows/product-capability-admission-and-sc
 8. If it belongs to the API gateway runtime, put it in `apigateway/`.
 9. If it belongs to a concrete agent product, orchestration runtime, or integration, put it in `agent/`.
 10. If it is a repository-level design plan, PRD, architecture decision, governance workflow, cross-project handoff, or migration record, put `proposal.md`, `design.md`, `tasks.md`, and `specs/**/spec.md` together under `openspec/changes/<design-id>/`, then archive to `openspec/changes/archive/YYYY-MM-DD-<design-id>/` after closeout.
-11. If it tracks concrete implementation, tests, CLI/API/Web/TUI behavior, execution evidence, or release closeout, put the OpenSpec change under the owning subproject, for example `cli/cohors/openspec/changes/cohors-<slug>/`.
-12. If it explains a concrete subproject's product, design, operator experience, runtime, protocol, implementation, QA, or release behavior, put it under that subproject's `docs/`, for example `cli/cohors/docs/`.
+11. If it tracks concrete implementation, tests, CLI/API/Web/TUI behavior, execution evidence, or release closeout, put the OpenSpec change under the owning subproject, for example `agent/ordo/openspec/changes/ordo-<slug>/`.
+12. If it explains a concrete subproject's product, design, operator experience, runtime, protocol, implementation, QA, or release behavior, put it under that subproject's `docs/`, for example `agent/ordo/docs/`.
 13. If it only explains the repository as a whole, cross-project governance, or where subproject docs live, put it in root `docs/`.
 
 ## Guardrails

@@ -55,7 +55,7 @@ scripts/skills.sh sync-root
 scripts/skills.sh sync-subprojects
 ```
 
-`<owner>` matches the repository path represented under `.skills/profiles/targets/`, for example `cli/cohors`.
+`<owner>` matches the repository path represented under `.skills/profiles/targets/`, for example `agent/ordo`.
 
 ## Validation
 
