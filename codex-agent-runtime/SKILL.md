@@ -9,7 +9,7 @@ Use this skill when a task is being handled by Codex or when documentation must 
 
 ## Workflow
 
-1. Load applicable skills from the current session metadata or generated runtime homes. Project-owned source skills live under `.skills/yeisme/`; do not create duplicate project skills under `.codex/skills`.
+1. When `yeisme-builder-profile` is explicitly active, load it before task Skills to recover the configured preferences, permissions, and explicit unknowns. Then load applicable task Skills from the current session metadata or generated runtime homes. Project-owned source Skills live under `.skills/yeisme/`; do not create duplicate project Skills under `.codex/skills`.
 2. When a skill mentions Claude Code tools, map them to Codex equivalents:
    - `TodoWrite` -> `update_plan`
    - `Bash` -> shell command tool

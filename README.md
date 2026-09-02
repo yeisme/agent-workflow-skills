@@ -8,6 +8,8 @@
 
 - Agent runtime：`codex-agent-runtime`、`claude-code-agent-runtime`、`gemini-cli-agent-runtime`、`copilot-cli-agent-runtime`、`cursor-agent-runtime`、`windsurf-agent-runtime`、`opencode-agent-runtime`、`crush-agent-runtime`
 - Skills 治理：`yeisme-claude-skills-layout`、`yeisme-skill-routing-governance`、`yeisme-skill-publisher`
+- Builder context：`yeisme-builder-profile`，为新项目提供公开身份、语言偏好、权限边界、常用开发模式和项目配置模板
+- 通用决策访谈：`grill-me`，仅在用户明确要求质询、挑战、压力测试或逐问时运行
 - 仓库与状态策略：`yeisme-repo-routing`、`local-first-backup-sync-policy`
 
 ## 使用与验证
@@ -29,6 +31,8 @@ yeisme-skill-routing-governance/scripts/skills.sh \
   --project /path/to/project \
   init
 ```
+
+`init` 默认只激活 `yeisme-skill-routing-governance`，用于管理 source/profile/runtime。`yeisme-builder-profile` 是显式启用的可选长期上下文，具体身份、偏好和项目规则仍由当前配置与最近的 `AGENTS.md` 决定。完整项目路由继续按需启用。
 
 语义选择仍由 Agent 完成；脚本只负责发现、唯一解析、profile 状态和双 runtime 同步。
 

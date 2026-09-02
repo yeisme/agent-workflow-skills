@@ -39,6 +39,16 @@ Read [references/agent-routing-contract.md](references/agent-routing-contract.md
 
 ## External Project Bootstrap
 
+For the shortest AI drama setup, install the Router directly from its cloud repository:
+
+```bash
+npx --yes skills add https://github.com/yeisme/ai-drama-skills \
+  --skill ai-drama-router \
+  --yes
+```
+
+Use the aggregate checkout only when a project needs long-term source binding, profile management, dual runtimes, and validation.
+
 From a public source checkout:
 
 ```bash
@@ -47,7 +57,7 @@ cd yeisme-agent-my-skills
 scripts/skills.sh --project /path/to/project init
 ```
 
-`init` creates the portable root profile, records the local source checkout, activates this management Skill, synchronizes both runtime homes, and validates the result. The source binding is local to each server; rerun `configure-source` after moving the checkout:
+`init` creates the portable root profile, records the local source checkout, activates this management Skill, synchronizes both runtime homes, and validates the result. Optional context or workflow Skills remain explicit profile choices. The source binding is local to each server; rerun `configure-source` after moving the checkout:
 
 ```bash
 scripts/skills.sh --project /path/to/project configure-source

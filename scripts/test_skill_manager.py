@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENGINE = ROOT / "yeisme-skill-routing-governance" / "scripts" / "skills.sh"
 MANAGER_SOURCE = ROOT / "yeisme-skill-routing-governance"
+BUILDER_PROFILE_SOURCE = ROOT / "yeisme-builder-profile"
 
 
 def write_skill(root: Path, directory: str, name: str, description: str) -> Path:
@@ -47,6 +48,7 @@ class SkillManagerTest(unittest.TestCase):
         self.project.mkdir()
         subprocess.run(["git", "init", "-q"], cwd=self.project, check=True)
         shutil.copytree(MANAGER_SOURCE, self.source / MANAGER_SOURCE.name)
+        shutil.copytree(BUILDER_PROFILE_SOURCE, self.source / BUILDER_PROFILE_SOURCE.name)
         write_skill(self.source, "sample-workflow", "sample-workflow", "running sample work")
 
     def tearDown(self) -> None:
@@ -77,10 +79,19 @@ class SkillManagerTest(unittest.TestCase):
         profile = self.project / ".skills" / "profiles" / "root.txt"
         source_local = self.project / ".skills" / "source.local"
         manifest = self.project / ".skills" / "managed-runtime.txt"
-        self.assertIn("yeisme-skill-routing-governance", profile.read_text(encoding="utf-8"))
+        profile_text = profile.read_text(encoding="utf-8")
+        self.assertIn("yeisme-skill-routing-governance", profile_text)
+        self.assertNotIn("yeisme-builder-profile", profile_text)
         self.assertEqual(source_local.read_text(encoding="utf-8").strip(), str(self.source))
         self.assertIn(".skills/source.local", (self.project / ".git" / "info" / "exclude").read_text(encoding="utf-8"))
         self.assertTrue(manifest.is_file())
+        for home in (".agents", ".claude"):
+            self.assertFalse((self.project / home / "skills" / "yeisme-builder-profile").exists())
+
+        self.run_manager("profile", "add", "yeisme-builder-profile")
+        self.run_manager("sync")
+        for home in (".agents", ".claude"):
+            self.assertTrue((self.project / home / "skills" / "yeisme-builder-profile" / "SKILL.md").is_file())
 
         self.run_manager("profile", "add", "sample-workflow")
         self.run_manager("sync")

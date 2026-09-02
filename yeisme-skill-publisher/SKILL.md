@@ -125,7 +125,7 @@ cd yeisme-agent-my-skills
 scripts/skills.sh --project /path/to/project init
 ```
 
-The portable manager activates `yeisme-skill-routing-governance`, writes the project profile through CLI commands, and synchronizes `.agents` plus `.claude`. Keep semantic Skill selection in the management Skill; do not encode task classification in the publishing script.
+The portable manager activates `yeisme-skill-routing-governance`, writes the project profile through CLI commands, and synchronizes `.agents` plus `.claude`. Optional context and workflow Skills remain explicit profile choices. Keep semantic Skill selection in the management Skill; do not encode task classification in the publishing script.
 
 The Yeisme monorepo continues to use its host adapter:
 

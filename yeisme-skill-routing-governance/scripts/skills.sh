@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MANAGER_VERSION="0.1.0"
+MANAGER_VERSION="0.2.0"
 OUTPUT_SPEC_VERSION="1.0"
 MANAGER_SKILL="yeisme-skill-routing-governance"
 OUTPUT_MODE="summary"
