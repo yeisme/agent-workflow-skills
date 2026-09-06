@@ -253,7 +253,7 @@ load_source() {
 
 skill_files() {
   find "$SOURCE_DIR" \
-    \( -type d \( -name .git -o -name .agents -o -name .claude -o -name node_modules -o -name temp \) -prune \) -o \
+    \( -type d \( -name .git -o -name .agents -o -name .claude -o -name node_modules -o -name temp -o -name '.skill-sync.*' \) -prune \) -o \
     \( -type f -name SKILL.md -print \) | sort
 }
 
