@@ -89,6 +89,8 @@ Do not write local execution wrappers, shell aliases, or agent-only command pref
 3. Create or update the skill in `.skills/yeisme/<module>/<skill-name>/`.
 4. Keep metadata in `agents/openai.yaml` consistent with `SKILL.md`.
 5. If the skill should be available in a root or subproject session, add it with `scripts/skills.sh profile add <target> <skill-name>`.
+
+🔴 CHECKPOINT · 🛑 STOP：do not `profile add`/`remove`, `sync-root`/`sync-subprojects`, commit, or push until the current user authorized that profile mutation or publish. Never hand-edit generated `.agents/skills` or `.claude/skills`.
 6. Run:
 
 ```bash
@@ -100,6 +102,15 @@ scripts/skills.sh list-custom
 ```
 
 7. If publishing, ensure the GitHub remote exists, commit the `.skills/yeisme/`, profile, `scripts/skills.sh`, and docs changes, then push.
+
+## If this fails
+
+| Trigger | First fix | Still failing |
+| --- | --- | --- |
+| `description` missing `Use when` | Rewrite the first sentence | Do not publish |
+| Duplicate skill in Codex / generated runtime | Delete only generated copies; `sync-root` | Do not edit `.agents/skills` as source |
+| Profile/runtime drift | Repair source + profile, then regenerate | Do not hand-patch runtime |
+| Capability is an MCP server | Put code under `mcp/` | Do not invent a skill as the implementation |
 
 ## Validation Rules
 

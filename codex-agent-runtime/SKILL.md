@@ -17,7 +17,19 @@ Use this skill when a task is being handled by Codex or when documentation must 
    - `Task` -> multi-agent dispatch when available; otherwise continue inline
    - `Skill` -> follow the loaded skill instructions directly
 3. Prefer CLI contracts before prose parsing: use `--json`, `--agent`, or `--events` when a Yeisme CLI exposes them.
-4. Configure MCP access through Gateway-rendered client config rather than hand-writing endpoint blocks.
+4. Configure MCP access through Gateway-rendered client config rather than hand-writing endpoint blocks. Direct owner LAN MCP is a separate path:
+
+```bash
+export EIKONA_MCP_TOKEN="$(tr -d '\r\n' < /absolute/private/eikona-team-mcp.key)"
+codex mcp add eikona --url http://<yeisme-lan-eikona-host>:18976/mcp --bearer-token-env-var EIKONA_MCP_TOKEN
+```
+
+That URL is the Eikona serve listener, not the Yeisme MCP Gateway. Put the
+token only in the environment variable; do not paste it into chat, docs, or
+repo files. For `eikona.execute` `edit`, never send Mac `/var/folders` or
+`/Users` paths as `reference_image`. Generate first or pass
+`eikona://artifact/<handle>` already on that server. `wait` returns a
+snapshot; failed runs must not be retried with the same idempotency key.
 
 ## Fast Local Iteration Default
 
@@ -150,6 +162,17 @@ mcp-gateway client config codex --registry ../registry.json --policy --json
 scripts/skills.sh list-runtime
 scripts/skills.sh profile show <owner>
 ```
+
+## If this fails
+
+| Trigger | First fix | Still failing |
+| --- | --- | --- |
+| Skill names Claude Code tools | Map to Codex equivalents (`TodoWrite` → `update_plan`) | Do not invent Codex-only tools |
+| No explicit `subagent` / `子 agent` request | Keep the same work in the root thread | Test volume or this skill never authorize a child |
+| Child writer timeout | Confirm liveness or close the original worker | Do not start another writer |
+| Final-gate failure | Classify `introduced` / `pre_existing` / `concurrent` / `environment` / `ambiguous` | Only `introduced` authorizes a patch; never change unrelated logic |
+| MCP token needed | Env var plus Gateway-rendered client config | Do not paste the token into chat, docs, or repo files |
+| Failed `eikona.execute` `edit` | Do not retry the same idempotency key | Generate first or pass `eikona://artifact/<handle>` |
 
 ## Boundaries
 

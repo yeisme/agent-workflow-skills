@@ -87,3 +87,12 @@ When asked where something belongs, answer with:
 - experience composition: where the user sees and controls the capability
 - any companion files that should be updated
 - commands to validate or sync, if relevant
+
+## If this fails
+
+| Trigger | First fix | Still failing |
+| --- | --- | --- |
+| "Merge into one console" | Treat as experience composition | Do not delete domain capabilities or move canonical state into a client |
+| Wrong owner already in a PRD | State `reject-now` or `split-owner` now | Do not wait for later review to drop a required capability |
+| Skill source vs runtime confusion | `.skills/yeisme/` is source; `.agents/skills` is generated | Do not publish from runtime copies |
+| Subproject docs in root `docs/<project>/` | Move to `<subproject>/docs/` | Root keeps indexes only |

@@ -35,6 +35,8 @@ scripts/skills.sh resolve <skill-name>
 8. Keep a Skill on demand unless it is required at session start, protects a high-frequency owner invariant, or repeated discovery misses justify promotion.
 9. If promotion or demotion is justified, preview the profile change, apply it through the manager, then perform the narrowest sync and validation.
 
+🔴 CHECKPOINT · 🛑 STOP：do not `profile add`/`remove` or sync until the current user authorized that assignment. Discovery is evidence, not approval. Abort sync when another writer is active or a runtime-only change cannot be explained.
+
 Read [references/agent-routing-contract.md](references/agent-routing-contract.md) when three or more candidates match, ownership is ambiguous, or a workflow/domain/audit combination needs compatibility review.
 
 ## External Project Bootstrap
@@ -136,6 +138,15 @@ scripts/skills.sh validate-subprojects-runtime
 ```
 
 Validation must fail on an unknown source, duplicate skill name, missing owner, profile/runtime drift, or different `.agents` and `.claude` contents.
+
+## If this fails
+
+| Trigger | First fix | Still failing |
+| --- | --- | --- |
+| Two primaries or two owners for one state | Keep one primary + at most one constraint | Do not activate the competing set |
+| Search hit is not in the profile | Read the source SKILL.md on demand | Do not install every match |
+| Runtime copy disagrees with source | Repair source/profile; regenerate | Do not hand-edit `.agents` / `.claude` |
+| External skill requested | `import` from an explicit Git ref, then review the diff | Do not write third-party skills into `.skills/yeisme/` |
 
 ## External Skills
 
