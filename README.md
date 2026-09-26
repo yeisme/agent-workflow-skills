@@ -2,7 +2,7 @@
 
 面向 Codex、Claude Code、Gemini CLI、Copilot CLI、Cursor、Windsurf、OpenCode、Crush 等 Agent 宿主的开源工作流与 Skills 治理集合。
 
-本仓库只保留通用 Agent runtime、Skills 分层、仓库路由、发布治理和 local-first policy。Ordo 调度与 Scaena 生产 Skills 已拆到各自 owner 仓库，避免通用 Agent 工作流与具体产品运行逻辑混在一起。
+本仓库只保留通用 Agent runtime、Skills 分层、仓库路由、发布治理和 local-first policy。各产品运行 Skills（调度、生产等）已拆到各自 owner 仓库，避免通用 Agent 工作流与具体产品运行逻辑混在一起。
 
 ## 能力分组
 
@@ -11,6 +11,7 @@
 - Builder context：`yeisme-builder-profile`，为新项目提供公开身份、语言偏好、权限边界、常用开发模式和项目配置模板
 - 通用决策访谈：`grill-me`，仅在用户明确要求质询、挑战、压力测试或逐问时运行
 - 仓库与状态策略：`yeisme-repo-routing`、`local-first-backup-sync-policy`
+- 多 Agent 开发约束：`agent-pipeline-development-constraints`，为编排、产品裁决、架构、OpenSpec、工作区、实现、浏览器 QA、审查、集成验证、文档同步和交付各角色固定写入范围、必备输入、证据和停止条件；规则真源见仓库 `docs/workflows/agent-pipeline-development-constraints.md`
 
 ## 使用与验证
 

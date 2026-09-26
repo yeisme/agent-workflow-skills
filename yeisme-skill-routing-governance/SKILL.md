@@ -82,11 +82,11 @@ The following commands are Yeisme monorepo host-adapter examples:
 
 ```bash
 scripts/skills.sh profile show root
-scripts/skills.sh profile show agent/ordo
-scripts/skills.sh profile add agent/ordo <skill-name> --dry-run
-scripts/skills.sh profile add agent/ordo <skill-name>
-scripts/skills.sh profile remove agent/ordo <skill-name> --dry-run
-scripts/skills.sh profile remove agent/ordo <skill-name>
+scripts/skills.sh profile show agent/scaena
+scripts/skills.sh profile add agent/scaena <skill-name> --dry-run
+scripts/skills.sh profile add agent/scaena <skill-name>
+scripts/skills.sh profile remove agent/scaena <skill-name> --dry-run
+scripts/skills.sh profile remove agent/scaena <skill-name>
 scripts/skills.sh profile validate
 ```
 
