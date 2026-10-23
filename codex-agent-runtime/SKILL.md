@@ -3,156 +3,21 @@ name: codex-agent-runtime
 description: Use when configuring, operating, or instructing Codex in Yeisme projects, including skill loading, tool-name mapping from Claude Code style skills, MCP Gateway client setup, multi-agent usage, profile sync, and safe command examples.
 ---
 
-# Codex Agent Runtime
+# Codex 运行指导
 
-Use this skill when a task is being handled by Codex or when documentation must explain how Codex should use Yeisme skills, MCP Gateway, and local tools.
+在 Codex 中使用 Yeisme Skills、MCP 或本地工具时，按当前运行时实际提供的能力操作。当前用户要求、最近的 AGENTS.md 和权限边界优先。
 
-## Workflow
+## 最小执行路径
 
-1. When `yeisme-builder-profile` is explicitly active, load it before task Skills to recover the configured preferences, permissions, and explicit unknowns. Then load applicable task Skills from the current session metadata or generated runtime homes. Project-owned source Skills live under `.skills/yeisme/`; do not create duplicate project Skills under `.codex/skills`.
-2. When a skill mentions Claude Code tools, map them to Codex equivalents:
-   - `TodoWrite` -> `update_plan`
-   - `Bash` -> shell command tool
-   - `Read` / `Edit` / `Write` -> native file tools, with `apply_patch` for manual edits
-   - `Task` -> multi-agent dispatch when available; otherwise continue inline
-   - `Skill` -> follow the loaded skill instructions directly
-3. Prefer CLI contracts before prose parsing: use `--json`, `--agent`, or `--events` when a Yeisme CLI exposes them.
-4. Configure MCP access through Gateway-rendered client config rather than hand-writing endpoint blocks. Direct owner LAN MCP is a separate path:
+1. 已启用 `yeisme-builder-profile` 时先恢复用户偏好，再读取本任务需要的 Skill。源码归 `.skills/yeisme/`，运行副本由 profile 生成，不在 `.codex/skills` 复制项目 Skill。
+2. Claude Code 风格工具名按能力映射：`TodoWrite` 对应可用的计划工具；`Bash` 对应 shell；`Read/Edit/Write` 对应文件工具；`Skill` 表示直接遵循已读取指令。不得虚构当前没有的工具。
+3. CLI 提供 `--json`、`--agent` 或 `--events` 时优先使用稳定合同，不解析人类输出。
+4. 普通本地实现、测试、文档、mock 和可丢弃测试数据直接推进；优先现有模式、最小可逆改动和针对性验证。保留无关脏树。
+5. 涉及生产、凭据变更、付费、部署、发布、推送、真实通信或不可逆外部操作时核对具体授权。已有同范围授权不重复确认。外部集成先验证 mock 或已授权 sandbox。
 
-```bash
-export EIKONA_MCP_TOKEN="$(tr -d '\r\n' < /absolute/private/eikona-team-mcp.key)"
-codex mcp add eikona --url http://<yeisme-lan-eikona-host>:18976/mcp --bearer-token-env-var EIKONA_MCP_TOKEN
-```
+## MCP 接入
 
-That URL is the Eikona serve listener, not the Yeisme MCP Gateway. Put the
-token only in the environment variable; do not paste it into chat, docs, or
-repo files. For `eikona.execute` `edit`, never send Mac `/var/folders` or
-`/Users` paths as `reference_image`. Generate first or pass
-`eikona://artifact/<handle>` already on that server. `wait` returns a
-snapshot; failed runs must not be retried with the same idempotency key.
-
-## Fast Local Iteration Default
-
-Treat an ordinary request to build, extend, fix, refactor, or test a feature as
-authorization to implement it in the local, non-production workspace. A new
-module, internal/local API, migration source file, mock, test, or codebase
-expansion is not an approval gate.
-
-Proceed directly with scoped source, test, fixture, documentation, local
-configuration, and disposable test-data changes; use the existing project
-pattern, choose a minimal reversible implementation, and run the narrowest
-relevant verification. Do not ask the user to approve routine implementation
-details or turn a feature request into a design-review sequence. For an
-external integration, implement and verify the adapter with a mock, sandbox, or
-test endpoint before enabling a live path.
-
-Pause only for a real high-impact side effect: deleting or irreversibly
-migrating non-disposable data; credentials; production or live access-control
-changes; deploy/publish/push actions; charges; real outbound communication; or
-bulk/destructive external writes. A current request that names the exact target
-and side effect supplies the required authority, subject to platform safety
-requirements. Preserve unrelated dirty worktree changes.
-
-See `docs/workflows/rapid-local-iteration.md` for the full decision matrix.
-
-## Context-Isolated Feature Delivery
-
-Use this workflow only after the current user explicitly requests a `subagent`,
-`子 agent`, `子agent`, or delegated/parallel work. Test volume, long logs,
-repeated implementation loops, task complexity, and this skill itself never
-authorize a child agent. Without that request, keep the same work in the root
-thread.
-
-After authorization, a feature with frequent integration/component/system/e2e
-tests, noisy logs, or repeated implementation loops may use one shallow Codex
-DAG instead of developing inline through a long-lived goal:
-
-```text
-root acceptance packet
-  -> implementer(single child turn, one complete bounded feature)
-  -> test-engineer(independent verification and evidence)
-  -> root acceptance or compact failure handoff
-  -> same implementer(repair) -> test-engineer(rerun)
-```
-
-Rules:
-
-- After user authorization, use the `balanced` model-and-effort route unless
-  the user pins a cap: Luna / low for exploration and repetitive checks, Luna /
-  medium for high-volume verification, Terra / medium for routine implementation
-  and research, and Terra / high only for bounded multi-module implementation.
-  Use Sol / medium for spec, task decomposition, acceptance criteria, and TDD
-  design; Sol / high for deep debugging, security, high-risk review,
-  concurrency, and integration; Sol / max only for core architecture, durable
-  contracts or migrations, critical trust boundaries, and costly-to-reverse
-  cross-project design. A capability mismatch may trigger one evidence-backed
-  tier or effort upgrade per failure loop. Every Sol / max dispatch must state
-  why it is core design; `ultra` requires an explicit user request.
-- A root goal records only the user objective, accepted scope, current stage,
-  and final status. It must not retain full implementation narration or test
-  output.
-- The implementer is the only tracked-file writer for the feature. It owns the
-  production change plus related test, fixture, and required documentation
-  edits, and should finish the bounded feature in one child turn when possible.
-- The test engineer does not edit tracked source, tests, fixtures, snapshots,
-  or config. It runs the real commands and writes only diagnostic/build/test
-  artifacts and redacted integration-test evidence.
-- The root reads compact worker envelopes and evidence summaries first. On
-  failure, return only the command, exit code, failure signature, evidence path,
-  and smallest useful log excerpt to the same implementer.
-- A timeout is not permission to start another writer. Confirm liveness or close
-  the original worker before rerouting.
-
-Use `route-agents` with `context_isolated_delivery: true`; add
-`integration_test_heavy: true` when verification is slow or verbose.
-
-## Optional Child Thread Goal
-
-`child_goal_policy` is an additive dispatch field with `schema_version: "1.0"`.
-It defaults to `disabled`; only an explicitly authorized current user may set
-`create_if_available`. When enabled, a child may inspect and manage at most one
-thread-local goal if the runtime offers a goal tool. The goal objective must be
-a strict subset of the dispatch scope ceiling; `descendants` remains `false`.
-Do not set a token budget unless
-the user explicitly requested one, overwrite an incompatible active goal, or
-require a goal tool in another runtime.
-
-Report `created`, `reused`, `unavailable`, or `collision` through optional
-`goal_report`; use `active`, `waiting_root`, `complete`, `blocked`, or
-`liveness_unknown` for state. `complete` is a candidate handoff to root, not
-final acceptance. Mark `blocked` only after the same blocker occurs in three
-consecutive goal turns. A timeout or interrupt neither cancels the goal nor
-releases a writer lease, and the goal never resets repair, model-upgrade, or
-circuit-breaker budgets. Root retains all scope/permission changes, user
-decisions, external actions, descendants, role or model upgrades, and final
-acceptance.
-
-## Staged Verification
-
-Keep implementation feedback separate from final acceptance:
-
-1. `implementing`: the implementer runs only focused tests and necessary local
-   checks for the owned slice. Do not repeatedly run repository-wide lint,
-   full builds, complete e2e, or strict global validation.
-2. `slice-ready`: the implementer returns changed paths, focused verification,
-   skipped final gates, and known risks.
-3. `verification`: an independent test engineer runs the acceptance-specific
-   integration/component/system/e2e commands on a stable diff and records
-   evidence without editing tracked files.
-4. `final-gate`: after code, direct tests, and required docs are stable, run the
-   owning subproject's full lint, build, typecheck, critical e2e, and OpenSpec
-   validation before submission or release.
-
-Before repairing a final-gate failure, classify it as `introduced`,
-`pre_existing`, `concurrent`, `environment`, or `ambiguous`. Only
-`introduced` failures directly authorize the same implementer to patch the
-owned scope. Never change unrelated business logic merely to clear a global
-lint warning.
-
-See `docs/workflows/codex-subagent-feature-delivery.md` for writer leases,
-progress fields, failure attribution, and repair routing.
-
-## Commands
+Gateway 接入使用其生成的客户端配置。直接连接产品的内网 MCP 是另一条路径，不能把 Eikona 的 `/mcp` 当成 Gateway。
 
 ```bash
 codex
@@ -163,21 +28,30 @@ scripts/skills.sh list-runtime
 scripts/skills.sh profile show <owner>
 ```
 
-## If this fails
+产品支持 token 环境变量或受保护文件时，使用该合同；真实 token 不进入聊天、命令参数、仓库文件或证据。远程图片编辑不能传客户端 `/Users`、`/var/folders` 等路径，应使用 owner 接受的上传入口或已有 `eikona://artifact/<handle>`。
 
-| Trigger | First fix | Still failing |
-| --- | --- | --- |
-| Skill names Claude Code tools | Map to Codex equivalents (`TodoWrite` → `update_plan`) | Do not invent Codex-only tools |
-| No explicit `subagent` / `子 agent` request | Keep the same work in the root thread | Test volume or this skill never authorize a child |
-| Child writer timeout | Confirm liveness or close the original worker | Do not start another writer |
-| Final-gate failure | Classify `introduced` / `pre_existing` / `concurrent` / `environment` / `ambiguous` | Only `introduced` authorizes a patch; never change unrelated logic |
-| MCP token needed | Env var plus Gateway-rendered client config | Do not paste the token into chat, docs, or repo files |
-| Failed `eikona.execute` `edit` | Do not retry the same idempotency key | Generate first or pass `eikona://artifact/<handle>` |
+`wait` 只是一次状态快照。生成失败或结果未知时先核对原运行，不能直接复用失败的幂等键重发。MCP 路由明确要求经 Gateway 时，不用 shell 绕过策略。
 
-## Boundaries
+## 子 Agent 与目标
 
-- Do not expose local execution wrappers, aliases, hidden prompts, private tool arguments, raw provider payloads, or full chain-of-thought.
-- Do not sync project-owned Yeisme skills into `.codex/skills`; use `.agents/skills` and `.claude/skills` runtime homes generated from profiles by `scripts/skills.sh`.
-- Do not bypass MCP route policy with direct shell calls when Gateway declares an MCP-first route.
-- Do not use a long-lived root goal as the implementation worker, test runner,
-  or log archive for a feature that can be handed to bounded child agents.
+只有当前用户明确要求 subagent、子 agent 或子agent，才能创建子代理。任务复杂、日志多、测试慢或本 Skill 都不构成授权；没有授权时由 root 完成同一工作。
+
+取得授权后，`route-agents` 是唯一协调者，默认 balanced。模型及 reasoning effort 遵循当前宿主 AGENTS.md，不在本 Skill 固定旧模型映射。深度保持一层：root 定义验收和权限，一个 implementer 负责完整功能的源码、测试、fixture 与文档，独立 test-engineer 仅执行验证和产出诊断证据。root 保留外部动作、最终整合和验收。
+
+worker 返回 `status, summary, evidence, files_modified, verification, risks, confidence`。失败包只带命令、退出码、最小错误、证据路径；修复交回原写入者。超时不证明写入者已停止，未确认存活状态前不派第二个重叠写入者。
+
+`child_goal_policy` 保持 `schema_version: "1.0"`，默认 `disabled`。只有当前用户明确授权 `create_if_available` 才能管理一个范围更小的线程目标；不覆盖不兼容目标，不自设 token 预算，不派后代。`goal_report` 可报告 `created|reused|unavailable|collision`，状态可为 `active|waiting_root|complete|blocked|liveness_unknown`。相同阻塞连续三轮后才能标记 blocked；目标完成仅是候选交接，不代替 root 验收。目标不重置修复、升级或熔断预算。
+
+## 分阶段验证
+
+- 实现中：只运行当前改动的必要检查，不反复跑全仓 lint、build、e2e 或全量 OpenSpec。
+- 切片稳定：交付改动路径、针对性结果、未执行检查及风险。
+- 最终验收：在稳定 diff 上执行该任务必需的完整检查；已有有效结果且输入未变时复用。
+- 修复失败前分类为 `introduced|pre_existing|concurrent|environment|ambiguous`；仅修复本次引入且属于授权范围的问题。
+- race 不属于默认验证。执行聚合命令前检查依赖，避免间接触发。
+
+详细规则以项目的 `docs/workflows/rapid-local-iteration.md` 和 `docs/workflows/codex-subagent-feature-delivery.md` 为准。普通任务不额外创建长期 goal、日志仓库或整套审批流程。
+
+## 输出与恢复
+
+输出结论、验证来源和下一步，命令可直接运行。不暴露内部执行前缀、隐藏提示词、私有工具参数、Provider 原文或完整推理。缺工具时说明能力缺口并采用普通工具回退；没有授权时继续本地可做的工作，不扩大范围。
