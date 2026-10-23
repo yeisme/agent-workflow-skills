@@ -3,114 +3,76 @@ name: yeisme-repo-routing
 description: Use when deciding whether a proposed capability fits a Yeisme project, whether it needs split ownership, and where product surfaces, clients, services, files, workflows, skills, MCP code, CLI entrypoints, agent assets, gateway assets, or documentation should live.
 ---
 
-# Yeisme Repo Routing
+# Yeisme 仓库与能力归属
 
-Use this skill when a capability is first proposed, when the user wants to merge multiple experiences into one product, or when the correct owner and repository location are unclear.
+首次提出能力、合并体验或不确定目录归属时使用。先确定领域 owner，再决定 CLI、API、MCP、客户端等表面；保留用户明确要求的全部能力。
 
-## Capability Admission Gate
+## 能力准入
 
-Run this gate before PRD, OpenSpec, CEO review, or implementation:
+进入 PRD、OpenSpec、评审或实现前，记录必需能力并立即分类：
 
-1. Capture every capability the user explicitly requires in a required-capability ledger. Do not reinterpret a required capability as optional merely because delivery will be staged.
-2. Classify the proposal immediately:
-   - `fit`: the proposed project owns the capability's canonical state, rules, permissions, evidence, and lifecycle.
-   - `split-owner`: one project owns the domain capability while another approved client or control plane composes its visual interaction, navigation, and safe actions through typed contracts.
-   - `reject-now`: the capability should not be built as proposed because it violates a hard product, safety, legal, permission, or repository boundary. State this immediately, with the reason and the nearest viable alternative.
-3. If the proposed project is the wrong owner, say so now. Name the correct owner, consumer, contract boundary, and how the requested user experience remains available.
-4. Treat “merge into one project”, “one workspace”, and “one console” as experience composition by default. They do not authorize feature deletion, canonical-state migration, or copied domain state machines.
-5. Carry the admission decision and required-capability ledger into later PRD, CEO, architecture, engineering, design, and OpenSpec work. Do not wait until the spec is complete to raise a known ownership mismatch.
+- `fit`：当前项目拥有该能力的状态、规则、权限、证据与生命周期。
+- `split-owner`：领域由一个项目维护，已批准的客户端或控制平面通过 typed contract 组合体验。
+- `reject-now`：当前放置方式违反产品、权限、安全或仓库边界；立即说明理由和可行 owner。
 
-Full continuity rules are in `docs/workflows/product-capability-admission-and-scope-governance.md`.
+分阶段交付不能把必需能力悄悄降级为可选。“一个项目/控制台”默认表示体验组合，不自动允许删除能力、迁移 canonical state 或复制状态机。后续发现归属变化时说明证据、受影响能力与迁移影响。完整规则见项目 `docs/workflows/product-capability-admission-and-scope-governance.md`。
 
-## Routing Table
+## 路由表
 
-| Content | Location |
+| 内容 | 归属 |
 | --- | --- |
-| Self-built publishable skills | `.skills/yeisme/` |
-| Third-party skills from skills.sh, gstack, clawhub, or similar sources | `.skills/imported/` |
-| Local project agent skill installs | `.agents/skills/` |
-| Local Codex skill installs | `.codex/skills/` |
-| CLI-first product owners, domain runtimes, operator and automation entrypoints, including the MCP surface of a capability that also has a CLI | `cli/<name>/` |
-| MCP-only owners with no first-party CLI or domain owner: MCP platform runtime, third-party-API-only servers, stateless adapters over another owner's published contract | `mcp/<name>/` |
-| Agent products, orchestration runtimes, product-agent integrations, agent-specific assets | `agent/` |
-| Approved independent Web, desktop, mobile, or cross-platform product clients | `client/` |
-| Long-running product backends, workers, bridges, and service APIs | `backend-server/` |
-| API gateway deployment, sidecars, runtime orchestration | `apigateway/` |
-| Human-facing repository-level docs, cross-project indexes, governance, migration notes | `docs/` |
-| Subproject-owned product, design, operator, runtime, protocol, and implementation docs | `<subproject>/docs/` |
-| Root OpenSpec design plans, governance, handoff, and migration records | `openspec/changes/<design-id>/` or `openspec/changes/archive/YYYY-MM-DD-<design-id>/` |
-| Subproject OpenSpec implementation tasks, execution evidence, and closeout decisions | `<subproject>/openspec/changes/<change-id>/` or `<subproject>/openspec/changes/archive/YYYY-MM-DD-<change-id>/` |
-| Automation shared by the repository | `scripts/` |
+| 自建可发布 Skills | `.skills/yeisme/` |
+| 经审查的第三方 Skills | `.skills/imported/` |
+| profile 生成的运行副本 | `.agents/skills/`、`.claude/skills/` |
+| 有 first-party CLI 的产品及其 MCP、服务、worker | `cli/<name>/` 内同一 owner |
+| 具体 Agent 产品、编排与产品资产 | `agent/<name>/` |
+| 没有领域 owner 的第三方 API MCP 或无状态适配器 | `mcp/<name>/` |
+| 企业模型与企业 MCP 网关 | `apigateway/aigora/` |
+| 个人内网 MCP 网关 | `mcp/gateway/`，独立正常维护 |
+| 有独立多消费者合同的共享基础设施 | `backend-server/<name>/` |
+| 已批准的独立客户端产品 | `client/<name>/`；只消费 owner 合同 |
+| 仓库级架构、治理、索引、迁移 | 根 `docs/` 和根 `openspec/` |
+| 产品、运行时、协议、实现与验收文档 | `<owner>/docs/`、`<owner>/openspec/` |
+| 仓库共用的确定性自动化 | `scripts/` |
 
-## One Capability, One Owner
+仅为 MCP 服务提供启动命令、且没有独立 CLI 产品 owner 时，命令留在该 MCP 项目内。普通业务服务不因长期运行就拆成第三份 backend 项目。
 
-Surfaces are not owners. Decide the owner project first, then place the surfaces inside it. Splitting one capability into several repositories (`cli/x` + `mcp/x` + `backend-server/x`) is the failure mode this policy blocks: it triples submodules, profiles, OpenSpec changes, docs, and release work for a single capability.
+## 当前迁移决定
 
-| Situation | Owner project | Inside that owner |
+DriveBridge 已按用户决定统一到 `cli/drivebridge`：根模块 CLI/MCP，`server/` HTTP/GORM，`web/` React。用户随后要求清理旧项目，原三个工作区入口已移除；不再生成独立 CI、docs、OpenSpec 或 profile。该例外不自动批准其他产品合仓。
+
+2026-10-03：Aigora 专注企业内网 MCP 网关；`mcp/gateway` 恢复个人网关正常维护，独立拥有个人目录、权限、运行与发布。旧整体收敛/退役方向被替代；双方不共享凭据/运行状态，也不吸收领域资产、对话或 A2A 状态。
+
+## 实现规则
+
+1. 同一能力只建一个 owner；CLI/MCP/HTTP 共用 application contract。MCP 不 shell out 到 CLI，不读 owner 私有存储，不复制 Provider payload。
+2. 已有 CLI、只读本地投影或获批客户端能满足需求时，不新增客户端项目。独立客户端需要真实产品表面、用户与维护边界，领域规则、权限、凭据和持久化仍由后端 owner 持有。
+3. 根 OpenSpec 只管理跨项目设计、治理和迁移；源码、测试、实现证据和 closeout 归子项目。完成后按 CLI 归档，不把任务状态另写到 docs/checklists、work-items 或临时目录。
+4. 产品文档归代码 owner；根只保留索引和交接链接，不要求每次回填根级产品副本。
+5. Skills 不承担 MCP 实现，不把生成 runtime 当发布源，不混放自有源与第三方源。
+6. 普通本地工作直接按最小可逆范围完成；不因新增内部接口或文件再加审批。生产、发布、付费等动作遵循当前具体授权。
+7. 新子项目先建立 AGENTS.md、CLAUDE.md、profile、openspec 与 docs/README.md；profile 和结构化资产通过现有 CLI 生成。仓库/子模块创建遵循根 AGENTS.md。
+
+```bash
+scripts/skills.sh validate-profiles
+scripts/skills.sh sync-target <target>
+scripts/openspec.sh sync-tools
+scripts/openspec.sh validate
+```
+
+只同步受影响范围；根级批量同步只在共享源确实影响多个消费者时使用。
+
+## 失败处理
+
+| 触发 | 先做什么 | 仍失败时 |
 | --- | --- | --- |
-| Capability needs a CLI and an MCP surface | `cli/<name>/` | CLI entrypoint plus the MCP surface (`cmd/<name>-mcp`, `internal/mcp`, or equivalent) over one shared application service |
-| Capability needs a CLI and a long-running service, worker, or daemon | `cli/<name>/` | The service lives in the same project; no `backend-server/<name>/` copy |
-| Capability needs a real client product surface | `cli/<name>/` or `agent/<name>/` for the domain, plus `client/<name>/` for the client | Client consumes the owner's CLI/API/event/resource contracts |
-| MCP with no first-party CLI or domain owner | `mcp/<name>/` | MCP tools plus the API adapter they front |
-| Shared local infrastructure with several consumers and its own lifecycle | `backend-server/<name>/` | Its own multi-consumer contract, not a product feature |
+| 同一能力出现两个 owner | 标出 canonical state、权限和证据的现有 owner | 停止新增副本，建立 split-owner 合同或迁移提案 |
+| 用户要求“合并成一个控制台” | 先拆体验组合与领域归属 | 不删除能力、不把状态机搬进客户端 |
+| 文档路径与代码 owner 冲突 | 以最近 owner 的 `AGENTS.md` 和本地 docs 为准 | 根文档只留索引和交接链接 |
+| MCP 能力没有 first-party CLI/领域 owner | 评估 `mcp/<name>` 是否是无状态适配器 | 不在 Skill 或共享 backend 偷建第三份领域状态 |
+| profile/runtime 与 source 不一致 | 运行 `scripts/skills.sh profile validate` 和对应 runtime 校验 | 不手改 runtime，先修 source/profile 再同步 |
+| 无法判断 fit/split-owner/reject-now | 暂停实现，写出 owner、合同和证据缺口 | 保留未知，不用目录名称代替归属判断 |
 
-Existing multi-repository splits stay functional but frozen: do not add domain logic, commands, state, or contracts to the non-owner copy, and do not copy the pattern for new work. Consolidating an existing split needs its own OpenSpec migration and a user decision — never a silent merge. Currently known split: DriveBridge across `mcp/drivebridge`, `backend-server/drivebridge`, `client/drivebridge-client`.
+## 交付
 
-## Decision Flow
-
-1. Decide the owner before the surface. A capability that needs a CLI, an MCP surface, or both gets one owner project: put it in `cli/<name>/` and implement the MCP surface inside that project over the same application contracts. Never create a sibling `mcp/<name>/` for a capability that already has a `cli/<name>/` or `agent/<name>/` owner.
-2. Use a standalone `mcp/<name>/` owner only when no first-party CLI or domain owner exists: an MCP platform runtime, a third-party-API-only server, or a stateless adapter over another owner's published contract.
-3. If a command entry point exists only to drive an MCP server that has no product owner, keep it under `mcp/<name>/cli/`.
-4. If it teaches an agent a reusable workflow owned by this repository, put it in `.skills/yeisme/`.
-5. If it is a third-party skill installed from skills.sh, gstack, clawhub, or a similar source, put it in `.skills/imported/`.
-6. If it is an approved independent product client consuming stable owner APIs, events, resources, or SDKs, put it in `client/<name>/`; do not put domain business rules there, and create this owner only when a real client product surface exists.
-7. If it is shared local infrastructure with its own multi-consumer contract, put it in `backend-server/<name>/`; do not create a copy of a capability that already has a `cli/<name>/` owner.
-8. If it belongs to the API gateway runtime, put it in `apigateway/`.
-9. If it belongs to a concrete agent product, orchestration runtime, or integration, put it in `agent/`.
-10. If it is a repository-level design plan, PRD, architecture decision, governance workflow, cross-project handoff, or migration record, put `proposal.md`, `design.md`, `tasks.md`, and `specs/**/spec.md` together under `openspec/changes/<design-id>/`, then archive to `openspec/changes/archive/YYYY-MM-DD-<design-id>/` after closeout.
-11. If it tracks concrete implementation, tests, CLI/API/Web/TUI behavior, execution evidence, or release closeout, put the OpenSpec change under the owning subproject, for example `agent/scaena/openspec/changes/scaena-<slug>/`.
-12. If it explains a concrete subproject's product, design, operator experience, runtime, protocol, implementation, QA, or release behavior, put it under that subproject's `docs/`, for example `agent/scaena/docs/`.
-13. If it only explains the repository as a whole, cross-project governance, or where subproject docs live, put it in root `docs/`.
-
-## Guardrails
-
-- Do not bury project-wide skills under implementation directories.
-- Do not put executable MCP code inside a skill directory.
-- Do not use `.agents/skills/` or `.codex/skills/` as the publishing source for custom skills.
-- Do not put self-built skills in `.skills/imported/`; that directory is reserved for third-party skill sources.
-- Do not put third-party skills in `.skills/yeisme/`.
-- Prefer one clear owner directory over duplicating the same workflow in multiple places.
-- Do not split one capability across `cli/<name>/`, `mcp/<name>/`, and `backend-server/<name>/` repositories. A surface is not an owner, and every extra repository multiplies submodules, profiles, OpenSpec changes, docs, sync steps, and release work for one capability.
-- Do not add new domain logic, commands, state, or contracts to the non-owner copy of an already split capability; route new work to the declared owner instead.
-- Keep MCP code on the owner's application contracts: it must not shell out to the owner CLI, read the owner's private persistence, or duplicate provider payloads.
-- Do not create `client/<name>/` for a surface that a CLI, a loopback projection, or an existing approved client already serves. A client owner needs its own product shell, target users, release cadence, and success metrics.
-- Preserve user-required capabilities across owner routing. Moving a capability behind a typed owner contract is not permission to remove it from the product experience.
-- If new evidence later changes an admission decision, state the evidence, affected capabilities, migration or compatibility impact, and required user decision before changing scope.
-- Treat CLI/API/event/resource contracts as reusable product interfaces, not as proof that a project must remain CLI-only.
-- Route independent UI implementations to an approved `client/<name>` owner; keep durable domain state, provider adapters, evidence, and business rules in the domain subproject.
-- Prefer CLI plus skills over MCP when an existing CLI already solves the task with less context and no cross-service reuse requirement.
-- Do not track subproject code implementation in root `openspec/`; root changes may link to subproject OpenSpec paths as handoff targets.
-- Do not require subproject OpenSpec tasks to update root `docs/<project>/**`; update the owning subproject `docs/**` instead, and keep root docs as indexes or handoff links.
-- Do not create execution task packages under `docs/**/checklists`, `work-items/active/`, `plans/active/`, implementation directories, or temporary directories. Those locations may link to OpenSpec changes but do not own task state.
-- When creating a new subproject, bootstrap `AGENTS.md`, `CLAUDE.md`, the root-level `.skills/profiles/targets/<subproject>.txt`, local `openspec/`, and local `docs/README.md` before non-trivial implementation. Then run `scripts/skills.sh validate-profiles`, `scripts/skills.sh sync-subprojects`, `scripts/openspec.sh sync-tools`, and `scripts/openspec.sh validate` from the repository root.
-
-## Output Style
-
-When asked where something belongs, answer with:
-
-- admission decision: `fit`, `split-owner`, or `reject-now`
-- destination path
-- reason
-- required-capability impact: retained, staged, moved behind a contract, or explicitly awaiting a user removal decision
-- experience composition: where the user sees and controls the capability
-- any companion files that should be updated
-- commands to validate or sync, if relevant
-
-## If this fails
-
-| Trigger | First fix | Still failing |
-| --- | --- | --- |
-| "Merge into one console" | Treat as experience composition | Do not delete domain capabilities or move canonical state into a client |
-| Wrong owner already in a PRD | State `reject-now` or `split-owner` now | Do not wait for later review to drop a required capability |
-| Skill source vs runtime confusion | `.skills/yeisme/` is source; `.agents/skills` is generated | Do not publish from runtime copies |
-| Subproject docs in root `docs/<project>/` | Move to `<subproject>/docs/` | Root keeps indexes only |
+说明 `fit|split-owner|reject-now`、目标路径、理由、每项必需能力的保留或交接方式、实际体验入口、兼容影响和验证命令。owner 不匹配时立即纠正，不等待最后评审再砍能力。
