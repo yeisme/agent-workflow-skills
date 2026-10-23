@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MANAGER_VERSION="0.2.0"
+# safe-management-contract: 1
+MANAGER_VERSION="0.3.0"
 OUTPUT_SPEC_VERSION="1.0"
 MANAGER_SKILL="yeisme-skill-routing-governance"
 OUTPUT_MODE="summary"
@@ -48,7 +49,9 @@ Global options:
 Commands:
   init                         Configure source, create the root profile, add the
                                routing manager, sync, and validate the project.
-  configure-source             Update .skills/source.local.
+  configure-source             Safely update .skills/source.local.
+  state migrate                Verify legacy state against its original source.
+  state recover --transaction ID  Restore an interrupted fixed-target transaction.
   doctor                       Check tools, source, profile, and runtime state.
   status                       Show project, source, profile, and managed counts.
   list-source                  List every discoverable Skill.
@@ -245,6 +248,7 @@ load_source() {
     "source_unconfigured" \
     "No Skill source is configured for $PROJECT_DIR." \
     "Run scripts/skills.sh --project $PROJECT_DIR --source /path/to/skills configure-source"
+  safe_path "$configured" || fail "unsafe_path" "Source path must not traverse symlinks."
   SOURCE_DIR="$(canonical_dir "$configured")" || fail \
     "source_missing" \
     "Skill source directory does not exist: $configured" \
@@ -447,6 +451,7 @@ profile_validate_raw() {
 
 write_source_config_raw() {
   [[ -n "$SOURCE_INPUT" ]] || fail "source_required" "--source is required for configure-source." "Pass the public Yeisme Skills checkout path."
+  safe_path "$SOURCE_INPUT" || fail "unsafe_path" "Source path must not traverse symlinks."
   SOURCE_DIR="$(canonical_dir "$SOURCE_INPUT")" || fail "source_missing" "Skill source directory does not exist: $SOURCE_INPUT"
   mkdir -p "$STATE_DIR"
   if [[ "$DRY_RUN" -eq 0 ]]; then
@@ -546,6 +551,7 @@ sync_raw() {
     fail "sync_failed" "Failed to replace managed runtimes; previous runtime was restored."
   fi
   rm -rf "$stage_root"
+  baseline_write "$STATE_DIR/runtime-baseline.v1.tsv"
 }
 
 validate_runtime_raw() {
@@ -708,6 +714,7 @@ command_sync() {
 command_validate() {
   COMMAND_PATH="skills.validate"
   load_source
+  require_baseline
   validate_runtime_raw || fail "runtime_invalid" "Profile, manifest, or managed runtime validation failed." "Run sync after fixing source and profile errors."
   PROJECTION_SUMMARY="Managed Skill runtimes are valid."
   add_fact "project" "$PROJECT_DIR"
@@ -742,7 +749,12 @@ command_doctor() {
   add_fact "manager_version" "$MANAGER_VERSION"
   add_fact "project" "$PROJECT_DIR"
   add_fact "source" "$SOURCE_DIR"
-  if validate_runtime_raw; then add_fact "runtime_state" "valid"; else add_fact "runtime_state" "needs_sync"; fi
+  local baseline_result=0
+  baseline_check || baseline_result=$?
+  if [[ "$baseline_result" -eq 2 ]]; then add_fact "runtime_state" "state_migration_required"
+  elif [[ "$baseline_result" -ne 0 ]]; then add_fact "runtime_state" "runtime_drift"
+  elif validate_runtime_raw; then add_fact "runtime_state" "valid"
+  else add_fact "runtime_state" "source_update_pending"; fi
 }
 
 parse_global_options() {
@@ -800,17 +812,14 @@ parse_remaining_global_options() {
   REMAINING_ARGS=("${filtered[@]}")
 }
 
-main() {
-  reset_projection
-  REMAINING_ARGS=()
-  parse_global_options "$@"
-  if [[ -z "$COMMAND" ]]; then
-    usage
-    exit 0
-  fi
-  parse_remaining_global_options "${REMAINING_ARGS[@]}"
-  initialize_project_paths
+dispatch_command() {
   case "$COMMAND" in
+    state)
+      case "${REMAINING_ARGS[0]:-}" in
+        migrate) command_state_migrate ;;
+        recover) command_state_recover "${REMAINING_ARGS[@]:1}" ;;
+        *) fail "state_action_required" "Use state migrate or state recover." ;;
+      esac ;;
     init) command_init "${REMAINING_ARGS[@]}" ;;
     configure-source) command_configure_source "${REMAINING_ARGS[@]}" ;;
     doctor) command_doctor "${REMAINING_ARGS[@]}" ;;
@@ -823,6 +832,22 @@ main() {
     validate) command_validate "${REMAINING_ARGS[@]}" ;;
     help) usage; exit 0 ;;
     *) fail "unknown_command" "Unknown command: $COMMAND" "Run scripts/skills.sh --help." ;;
+  esac
+}
+
+# This helper is distributed with the canonical manager, never loaded from a project.
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/safe-state.sh"
+main() {
+  reset_projection
+  REMAINING_ARGS=()
+  parse_global_options "$@"
+  if [[ -z "$COMMAND" ]]; then usage; exit 0; fi
+  parse_remaining_global_options "${REMAINING_ARGS[@]}"
+  safe_path "$PROJECT_INPUT" || fail "unsafe_path" "Unsafe project path."
+  initialize_project_paths
+  case "$COMMAND:${REMAINING_ARGS[0]:-}" in
+    init:*|configure-source:*|sync:*|profile:add|profile:remove|profile:create|state:migrate) safe_mutation ;;
+    *) dispatch_command ;;
   esac
   render_projection
 }
