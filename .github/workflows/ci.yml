@@ -1,0 +1,115 @@
+# Change-aware CI maintained by repository scripts.
+name: CI
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      level: ${{ steps.select.outputs.level }}
+      integration: ${{ steps.select.outputs.integration }}
+      docs_changed: ${{ steps.select.outputs.docs_changed }}
+      go_changed: ${{ steps.select.outputs.go_changed }}
+      python_changed: ${{ steps.select.outputs.python_changed }}
+      web_changed: ${{ steps.select.outputs.web_changed }}
+      legacy_changed: ${{ steps.select.outputs.legacy_changed }}
+      spec_changed: ${{ steps.select.outputs.spec_changed }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - id: select
+      run: python3 scripts/ci/changed_scope.py select
+  docs-check:
+    needs: scope
+    if: needs.scope.outputs.level == 'docs' || needs.scope.outputs.docs_changed ==
+      'true' || needs.scope.outputs.spec_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-node@v4
+      if: needs.scope.outputs.spec_changed == 'true'
+      with:
+        node-version: '22'
+    - run: python3 scripts/ci/changed_scope.py docs
+  quick-check:
+    needs: scope
+    if: needs.scope.outputs.level == 'quick'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - run: python3 scripts/validate_skills.py
+    - name: Portable manager regression
+      run: python3 scripts/run-evidence.py -- python3 scripts/test_skill_manager.py
+    - name: Preserve manager evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: manager-quick-check
+        path: temp/integration-test-runs/
+  check-full:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - run: python3 scripts/validate_skills.py
+    - name: Portable manager regression
+      run: python3 scripts/run-evidence.py -- python3 scripts/test_skill_manager.py
+    - name: Preserve manager evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: manager-check-full
+        path: temp/integration-test-runs/
+    name: Full / check
+    needs:
+    - scope
+    if: needs.scope.outputs.level == 'full'
+  check:
+    name: check
+    if: always()
+    needs:
+    - scope
+    - docs-check
+    - quick-check
+    - check-full
+    runs-on: ubuntu-latest
+    env:
+      NEEDS_JSON: ${{ toJSON(needs) }}
+    steps:
+    - name: Require selected checks
+      shell: python
+      run: "import json, os, sys\nneeds = json.loads(os.environ[\"NEEDS_JSON\"])\n\
+        if needs[\"scope\"][\"result\"] != \"success\":\n    sys.exit(\"Change selection\
+        \ did not succeed\")\nlevel = needs[\"scope\"][\"outputs\"][\"level\"]\nif\
+        \ level not in (\"docs\", \"quick\", \"full\"):\n    sys.exit(\"Unknown check\
+        \ level\")\nfor name, value in needs.items():\n    if name == \"scope\":\n\
+        \        continue\n    expected = (name == \"docs-check\" and (level == \"\
+        docs\" or needs[\"scope\"][\"outputs\"].get(\"docs_changed\") == \"true\"\
+        \ or needs[\"scope\"][\"outputs\"].get(\"spec_changed\") == \"true\")) or\
+        \ (name == \"quick-check\" and level == \"quick\") or (name not in (\"docs-check\"\
+        , \"quick-check\") and level == \"full\")\n    wanted = \"success\" if expected\
+        \ else \"skipped\"\n    if value[\"result\"] != wanted:\n        sys.exit(f\"\
+        {name}: expected {wanted}, got {value['result']}\")\nprint(f\"CI passed: level={level};\
+        \ unrelated lanes intentionally skipped\")\n"
+'on':
+  pull_request: null
+  push:
+    branches:
+    - main
+    - develop
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref
+    }}
+  cancel-in-progress: true
