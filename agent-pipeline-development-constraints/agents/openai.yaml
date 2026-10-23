@@ -1,0 +1,5 @@
+display_name: "Agent Pipeline Development Constraints"
+short_description: "Per-role write scope, evidence, and stop conditions for the multi-agent delivery pipeline."
+default_prompt: "Use $agent-pipeline-development-constraints to dispatch this work with per-role write scope, required inputs, evidence, and stop conditions; keep reviewers read-only, route rework by failure classification, and check the gate order before merging."
+policy:
+  allow_implicit_invocation: true
