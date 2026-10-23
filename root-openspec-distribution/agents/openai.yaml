@@ -1,0 +1,3 @@
+display_name: Root OpenSpec Distribution
+short_description: Route root OpenSpec changes to owner projects and freeze root implementation tasks.
+default_prompt: Use $root-openspec-distribution to map root OpenSpec changes to code owners, update the read-only distribution index, and keep implementation and real acceptance out of the root repository.
