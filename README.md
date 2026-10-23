@@ -6,6 +6,8 @@
 
 ## 能力分组
 
+根仓库的 OpenSpec 分发使用 `root-openspec-distribution`：根 change 只保留治理与 handoff，代码、测试、closeout 和真实验收进入代码 owner 的本地 OpenSpec。该 Skill 不执行 Provider、付费、部署、发布或现场验收。
+
 - Agent runtime：`codex-agent-runtime`、`claude-code-agent-runtime`、`gemini-cli-agent-runtime`、`copilot-cli-agent-runtime`、`cursor-agent-runtime`、`windsurf-agent-runtime`、`opencode-agent-runtime`、`crush-agent-runtime`
 - Skills 治理：`yeisme-claude-skills-layout`、`yeisme-skill-routing-governance`、`yeisme-skill-publisher`
 - Builder context：`yeisme-builder-profile`，为新项目提供公开身份、语言偏好、权限边界、常用开发模式和项目配置模板
@@ -19,7 +21,7 @@
 git clone https://github.com/yeisme/agent-workflow-skills.git
 cd agent-workflow-skills
 python3 scripts/validate_skills.py
-python3 scripts/test_skill_manager.py
+python3 scripts/run-evidence.py -- python3 scripts/test_skill_manager.py
 ```
 
 这些 Skills 可以描述宿主 adapter 所需 capability，但不应假设宿主一定存在 `scripts/skills.sh`、固定目录或特定产品。Yeisme 专属命令作为示例与 adapter 说明保留在明确标注的 Skill 中。
@@ -34,6 +36,8 @@ yeisme-skill-routing-governance/scripts/skills.sh \
 ```
 
 `init` 默认只激活 `yeisme-skill-routing-governance`，用于管理 source/profile/runtime。`yeisme-builder-profile` 是显式启用的可选长期上下文，具体身份、偏好和项目规则仍由当前配置与最近的 `AGENTS.md` 决定。完整项目路由继续按需启用。
+
+manager 0.3.0自动校验上次内容基线，旧项目须显式state migrate，漂移/缺源/不安全降级停止。中断事务使用state recover，不自动删锁或认领用户内容；详细安全边界见治理Skill。回归使用原Python unittest并记录owner temp/integration-test-runs证据，普通CI不联网采集或执行race。
 
 语义选择仍由 Agent 完成；脚本只负责发现、唯一解析、profile 状态和双 runtime 同步。
 
